@@ -8,10 +8,6 @@
 
 #include "code/cppitertools/enumerate.hpp"
 
-#include "TString.h"
-#include "Math/Vector3D.h"
-#include <Math/Vector4D.h>
-
 #include "Event.cuh"
 
 namespace SDL {
@@ -48,7 +44,7 @@ namespace SDL {
         std::vector<short> trackCandidateType() { return out_tc_trackCandidateType_; }
     private:
         void loadMaps();
-        TString get_absolute_path_after_check_file_exists(const std::string name);
+	std::string get_absolute_path_after_check_file_exists(const std::string name);
         void prepareInput(const std::vector<float> see_px,
                           const std::vector<float> see_py,
                           const std::vector<float> see_pz,
@@ -69,7 +65,7 @@ namespace SDL {
                           const std::vector<float> ph2_y,
                           const std::vector<float> ph2_z);
 
-        ROOT::Math::XYZVector calculateR3FromPCA(const ROOT::Math::PxPyPzMVector& p3,
+        std::vector<float> calculateR3FromPCA(float p3_x, float p3_y, float p3_z,
                                                  const float dxy,
                                                  const float dz);
 
@@ -80,7 +76,7 @@ namespace SDL {
                                              const unsigned int* hitIndices);
 
         // Input and output vectors
-        TString TrackLooperDir_;
+	std::string TrackLooperDir_;
         std::vector<float> in_trkX_;
         std::vector<float> in_trkY_;
         std::vector<float> in_trkZ_;

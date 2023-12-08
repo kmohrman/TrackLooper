@@ -1,15 +1,30 @@
 #include "LST.h"
+#include <math.h> 
 
 SDL::LST::LST() {
     TrackLooperDir_ = getenv("LST_BASE");
 }
 
+float get_pt(float px, float py) {
+    return sqrt(px*px + py*py);
+}
+
+float get_eta(float px, float py, float pz) {
+    float r = sqrt( px*px + py*py + pz*pz );
+    float eta = 0.5 * log( (r+pz)/(r-pz) );
+    return eta;
+}
+
+float get_phi(float px, float py) {
+    return atan2(px,py);
+}
+
 void SDL::LST::eventSetup() {
     static std::once_flag mapsLoaded;
     std::call_once(mapsLoaded, &SDL::LST::loadMaps, this);
-    TString path = get_absolute_path_after_check_file_exists(TString::Format("%s/data/centroid_CMSSW_12_2_0_pre2.txt",TrackLooperDir_.Data()).Data());
+    std::string path = get_absolute_path_after_check_file_exists(TrackLooperDir_ + "/data/centroid_CMSSW_12_2_0_pre2.txt");
     static std::once_flag modulesInited;
-    std::call_once(modulesInited, SDL::initModules, path);
+    std::call_once(modulesInited, SDL::initModules, path.c_str());
 }
 
 void SDL::LST::run(cudaStream_t stream,
@@ -163,42 +178,42 @@ void SDL::LST::run(cudaStream_t stream,
 
 void SDL::LST::loadMaps() {
     // Module orientation information (DrDz or phi angles)
-    TString endcap_geom = get_absolute_path_after_check_file_exists(TString::Format("%s/data/endcap_orientation_data_CMSSW_12_2_0_pre2.txt", TrackLooperDir_.Data()).Data());
-    TString tilted_geom = get_absolute_path_after_check_file_exists(TString::Format("%s/data/tilted_orientation_data_CMSSW_12_2_0_pre2.txt", TrackLooperDir_.Data()).Data());
-    SDL::endcapGeometry.load(endcap_geom.Data()); // centroid values added to the map
-    SDL::tiltedGeometry.load(tilted_geom.Data());
+    std::string endcap_geom = get_absolute_path_after_check_file_exists(TrackLooperDir_ + "/data/endcap_orientation_data_CMSSW_12_2_0_pre2.txt");
+    std::string tilted_geom = get_absolute_path_after_check_file_exists(TrackLooperDir_ + "/data/tilted_orientation_data_CMSSW_12_2_0_pre2.txt");
+    SDL::endcapGeometry.load(endcap_geom); // centroid values added to the map
+    SDL::tiltedGeometry.load(tilted_geom);
 
     // Module connection map (for line segment building)
-    TString mappath = get_absolute_path_after_check_file_exists(TString::Format("%s/data/module_connection_tracing_CMSSW_12_2_0_pre2_merged.txt", TrackLooperDir_.Data()).Data());
-    SDL::moduleConnectionMap.load(mappath.Data());
+    std::string mappath = get_absolute_path_after_check_file_exists(TrackLooperDir_ + "/data/module_connection_tracing_CMSSW_12_2_0_pre2_merged.txt");
+    SDL::moduleConnectionMap.load(mappath);
 
-    TString pLSMapDir = TrackLooperDir_+"/data/pixelmaps_CMSSW_12_2_0_pre2_0p8minPt";
+    std::string pLSMapDir = TrackLooperDir_+"/data/pixelmaps_CMSSW_12_2_0_pre2_0p8minPt";
 
-    TString path;
-    path = TString::Format("%s/pLS_map_layer1_subdet5.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer1Subdet5.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_layer2_subdet5.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer2Subdet5.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_layer1_subdet4.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer1Subdet4.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_layer2_subdet4.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer2Subdet4.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
+    std::string path;
+    path = pLSMapDir + "/pLS_map_layer1_subdet5.txt"; SDL::moduleConnectionMap_pLStoLayer1Subdet5.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_layer2_subdet5.txt"; SDL::moduleConnectionMap_pLStoLayer2Subdet5.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_layer1_subdet4.txt"; SDL::moduleConnectionMap_pLStoLayer1Subdet4.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_layer2_subdet4.txt"; SDL::moduleConnectionMap_pLStoLayer2Subdet4.load(get_absolute_path_after_check_file_exists(path));
 
-    path = TString::Format("%s/pLS_map_neg_layer1_subdet5.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer1Subdet5_neg.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_neg_layer2_subdet5.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer2Subdet5_neg.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_neg_layer1_subdet4.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer1Subdet4_neg.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_neg_layer2_subdet4.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer2Subdet4_neg.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
+    path = pLSMapDir + "/pLS_map_neg_layer1_subdet5.txt"; SDL::moduleConnectionMap_pLStoLayer1Subdet5_neg.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_neg_layer2_subdet5.txt"; SDL::moduleConnectionMap_pLStoLayer2Subdet5_neg.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_neg_layer1_subdet4.txt"; SDL::moduleConnectionMap_pLStoLayer1Subdet4_neg.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_neg_layer2_subdet4.txt"; SDL::moduleConnectionMap_pLStoLayer2Subdet4_neg.load(get_absolute_path_after_check_file_exists(path));
 
-    path = TString::Format("%s/pLS_map_pos_layer1_subdet5.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer1Subdet5_pos.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_pos_layer2_subdet5.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer2Subdet5_pos.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_pos_layer1_subdet4.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer1Subdet4_pos.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
-    path = TString::Format("%s/pLS_map_pos_layer2_subdet4.txt", pLSMapDir.Data()).Data(); SDL::moduleConnectionMap_pLStoLayer2Subdet4_pos.load(get_absolute_path_after_check_file_exists(path.Data()).Data());
+    path = pLSMapDir + "/pLS_map_pos_layer1_subdet5.txt"; SDL::moduleConnectionMap_pLStoLayer1Subdet5_pos.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_pos_layer2_subdet5.txt"; SDL::moduleConnectionMap_pLStoLayer2Subdet5_pos.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_pos_layer1_subdet4.txt"; SDL::moduleConnectionMap_pLStoLayer1Subdet4_pos.load(get_absolute_path_after_check_file_exists(path));
+    path = pLSMapDir + "/pLS_map_pos_layer2_subdet4.txt"; SDL::moduleConnectionMap_pLStoLayer2Subdet4_pos.load(get_absolute_path_after_check_file_exists(path));
 }
 
-TString SDL::LST::get_absolute_path_after_check_file_exists(const std::string name) {
+std::string SDL::LST::get_absolute_path_after_check_file_exists(const std::string name) {
     std::filesystem::path fullpath = std::filesystem::absolute(name.c_str());
     if (not std::filesystem::exists(fullpath))
     {
         std::cout << "ERROR: Could not find the file = " << fullpath << std::endl;
         exit(2);
     }
-    return TString(fullpath.string().c_str());
+    return std::string(fullpath.string().c_str());
 }
 
 void SDL::LST::prepareInput(const std::vector<float> see_px,
@@ -265,22 +280,38 @@ void SDL::LST::prepareInput(const std::vector<float> see_px,
     const int hit_size = trkX.size();
 
     for (auto &&[iSeed, _] : iter::enumerate(see_stateTrajGlbPx)) {
-        ROOT::Math::PxPyPzMVector p3LH(see_stateTrajGlbPx[iSeed], see_stateTrajGlbPy[iSeed], see_stateTrajGlbPz[iSeed], 0);
-        ROOT::Math::XYZVector p3LH_helper(see_stateTrajGlbPx[iSeed], see_stateTrajGlbPy[iSeed], see_stateTrajGlbPz[iSeed]);
-        float ptIn = p3LH.Pt();
-        float eta = p3LH.Eta();
+        //ROOT::Math::PxPyPzMVector p3LH(see_stateTrajGlbPx[iSeed], see_stateTrajGlbPy[iSeed], see_stateTrajGlbPz[iSeed], 0);
+        //std::vector<std::vector<float>> p3LH = {{see_stateTrajGlbPx[iSeed]}, {see_stateTrajGlbPy[iSeed]}, {see_stateTrajGlbPz[iSeed]}};
+        float p3LH_px = see_stateTrajGlbPx[iSeed];
+        float p3LH_py = see_stateTrajGlbPy[iSeed];
+        float p3LH_pz = see_stateTrajGlbPz[iSeed];
+        float ptIn = get_pt(p3LH_px,p3LH_py); //p3LH.Pt();
+        float eta = get_eta(p3LH_px,p3LH_py,p3LH_pz);
         float ptErr = see_ptErr[iSeed];
+        //ROOT::Math::XYZVector p3LH_helper(see_stateTrajGlbPx[iSeed], see_stateTrajGlbPy[iSeed], see_stateTrajGlbPz[iSeed]);
 
         if ((ptIn > 0.8 - 2 * ptErr)) {
-            ROOT::Math::XYZVector r3LH(see_stateTrajGlbX[iSeed], see_stateTrajGlbY[iSeed], see_stateTrajGlbZ[iSeed]);
-            ROOT::Math::PxPyPzMVector p3PCA(see_px[iSeed], see_py[iSeed], see_pz[iSeed], 0);
-            ROOT::Math::XYZVector r3PCA(calculateR3FromPCA(p3PCA, see_dxy[iSeed], see_dz[iSeed]));
+            //ROOT::Math::XYZVector r3LH(see_stateTrajGlbX[iSeed], see_stateTrajGlbY[iSeed], see_stateTrajGlbZ[iSeed]);
+            float r3LH_x = see_stateTrajGlbX[iSeed];
+            float r3LH_y = see_stateTrajGlbY[iSeed];
+            float r3LH_z = see_stateTrajGlbZ[iSeed];
 
-            float pixelSegmentDeltaPhiChange = (r3LH-p3LH_helper).Phi();
+            //ROOT::Math::PxPyPzMVector p3PCA(see_px[iSeed], see_py[iSeed], see_pz[iSeed], 0);
+            float p3PCA_px = see_px[iSeed];
+            float p3PCA_py = see_py[iSeed];
+            float p3PCA_pz = see_pz[iSeed];
+
+            //ROOT::Math::XYZVector r3PCA(calculateR3FromPCA(p3PCA, see_dxy[iSeed], see_dz[iSeed]));
+            std::vector<float> r3PCA(calculateR3FromPCA(p3PCA_px, p3PCA_py, p3PCA_pz, see_dxy[iSeed], see_dz[iSeed]));
+            float r3PCA_x = r3PCA[0];
+            float r3PCA_y = r3PCA[1];
+            float r3PCA_z = r3PCA[2];
+
+            float pixelSegmentDeltaPhiChange = get_phi(r3LH_x-p3LH_px, r3LH_y-p3LH_py);
             float etaErr = see_etaErr[iSeed];
-            float px = p3LH.Px();
-            float py = p3LH.Py();
-            float pz = p3LH.Pz();
+            float px = p3LH_px;
+            float py = p3LH_py;
+            float pz = p3LH_pz;
 
             int charge = see_q[iSeed];
             int pixtype = -1;
@@ -305,22 +336,22 @@ void SDL::LST::prepareInput(const std::vector<float> see_px,
                 count++;
             }
 
-            trkX.push_back(r3PCA.X());
-            trkY.push_back(r3PCA.Y());
-            trkZ.push_back(r3PCA.Z());
-            trkX.push_back(p3PCA.Pt());
-            float p3PCA_Eta = p3PCA.Eta();
+            trkX.push_back(r3PCA_x);
+            trkY.push_back(r3PCA_y);
+            trkZ.push_back(r3PCA_z);
+            trkX.push_back(get_pt(p3PCA_px,p3PCA_py));
+            float p3PCA_Eta = get_eta(p3PCA_px,p3PCA_py,p3PCA_pz);
             trkY.push_back(p3PCA_Eta);
-            float p3PCA_Phi = p3PCA.Phi();
+            float p3PCA_Phi = get_phi(p3PCA_px,p3PCA_py);
             trkZ.push_back(p3PCA_Phi);
-            trkX.push_back(r3LH.X());
-            trkY.push_back(r3LH.Y());
-            trkZ.push_back(r3LH.Z());
+            trkX.push_back(r3LH_x);
+            trkY.push_back(r3LH_y);
+            trkZ.push_back(r3LH_z);
             hitId.push_back(1);
             hitId.push_back(1);
             hitId.push_back(1);
             if(see_hitIdx[iSeed].size() > 3) {
-                trkX.push_back(r3LH.X());
+                trkX.push_back(r3LH_x);
                 trkY.push_back(see_dxy[iSeed]);
                 trkZ.push_back(see_dz[iSeed]);
                 hitId.push_back(1);
@@ -337,7 +368,7 @@ void SDL::LST::prepareInput(const std::vector<float> see_px,
             ptErr_vec.push_back(ptErr);
             etaErr_vec.push_back(etaErr);
             eta_vec.push_back(eta);
-            float phi = p3LH.Phi();
+            float phi = get_phi(p3LH_px,p3LH_py);
             phi_vec.push_back(phi);
             charge_vec.push_back(charge);
             seedIdx_vec.push_back(iSeed);
@@ -389,14 +420,15 @@ void SDL::LST::prepareInput(const std::vector<float> see_px,
     in_isQuad_vec_ = isQuad_vec;
 }
 
-ROOT::Math::XYZVector SDL::LST::calculateR3FromPCA(const ROOT::Math::PxPyPzMVector& p3, const float dxy, const float dz) {
-    const float pt = p3.Pt();
-    const float p = p3.P();
+//ROOT::Math::XYZVector SDL::LST::calculateR3FromPCA(const ROOT::Math::PxPyPzMVector& p3, const float dxy, const float dz) {
+std::vector<float> SDL::LST::calculateR3FromPCA(float p3_x, float p3_y, float p3_z, const float dxy, const float dz) {
+    const float pt = get_pt(p3_x,p3_y);
+    const float p = sqrt(p3_x*p3_x + p3_y*p3_y + p3_z*p3_z);
     const float vz = dz*pt*pt/p/p;
 
-    const float vx = -dxy*p3.y()/pt - p3.x()/p*p3.z()/p*dz;
-    const float vy =    dxy*p3.x()/pt - p3.y()/p*p3.z()/p*dz;
-    return ROOT::Math::XYZVector(vx, vy, vz);
+    const float vx = -dxy*p3_y/pt - p3_x/p*p3_z/p*dz;
+    const float vy =    dxy*p3_x/pt - p3_y/p*p3_z/p*dz;
+    return std::vector<float> {{vx}, {vy}, {vz}};
 }
 
 void SDL::LST::getOutput(SDL::Event& event) {
