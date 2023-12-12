@@ -6,7 +6,7 @@
 #include <numeric>
 #include <mutex>
 
-#include "code/cppitertools/enumerate.hpp"
+#include "../code/cppitertools/enumerate.hpp"
 
 #include "Event.cuh"
 
