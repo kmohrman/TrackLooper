@@ -86,4 +86,20 @@ void run_sdl() {
     );
 
 
+    // Try to look at the output info
+    std::vector<std::vector<unsigned int>> hits;
+    std::vector<unsigned int> len;
+    std::vector<int> seedIdx;
+    std::vector<short> trackCandidateType;
+    hits = lst.hits();
+    len = lst.len();
+    seedIdx = lst.seedIdx();
+    trackCandidateType = lst.trackCandidateType();
+
+    std::cout << "Hits 0,0: " << hits[0][0] << std::endl;
+    std::cout << "Len: " << len[0] << std::endl;
+    std::cout << "seedIdx: " << seedIdx[0] << std::endl;
+    std::cout << "trackCandidateType: " << trackCandidateType[0] << std::endl;
+
+
 }
